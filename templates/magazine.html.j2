@@ -30,15 +30,45 @@ Mag
 </td>
 </tr>
 
+{% if meta.overview %}
+<!-- The day in brief -->
+<tr>
+<td style="padding:24px 32px 4px 32px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#faf9f4;border-left:4px solid #c1512f;">
+<tr>
+<td style="padding:18px 22px;">
+<div style="font-family:'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;font-size:11px;color:#c1512f;text-transform:uppercase;letter-spacing:1.2px;font-weight:bold;padding-bottom:8px;">
+Start here
+</div>
+<div style="font-family:Georgia,'Times New Roman',serif;font-size:16px;line-height:1.65;color:#2b2a24;">
+{{ meta.overview }}
+</div>
+</td>
+</tr>
+</table>
+</td>
+</tr>
+{% endif %}
+
 {% for section in sections %}
 <!-- Section: {{ section.name }} -->
 <tr>
-<td style="padding:28px 32px 4px 32px;">
+<td style="padding:30px 32px 4px 32px;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
 <tr>
-<td style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:bold;color:#1a1a1a;border-bottom:1px solid #d8d6c9;padding-bottom:8px;">
+<td style="font-family:Georgia,'Times New Roman',serif;font-size:22px;font-weight:bold;color:#1a1a1a;padding-bottom:6px;">
 {{ section.name }}
 </td>
+</tr>
+{% if section.intro %}
+<tr>
+<td style="font-size:14px;line-height:1.6;color:#6b6a63;padding-bottom:10px;">
+{{ section.intro }}
+</td>
+</tr>
+{% endif %}
+<tr>
+<td style="border-bottom:1px solid #d8d6c9;font-size:1px;line-height:1px;">&nbsp;</td>
 </tr>
 </table>
 </td>
@@ -46,7 +76,7 @@ Mag
 
 {% for item in section['items'] %}
 <tr>
-<td style="padding:14px 32px;{% if not loop.last %}border-bottom:1px solid #efeee6;{% endif %}">
+<td style="padding:18px 32px;{% if not loop.last %}border-bottom:1px solid #efeee6;{% endif %}">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
 <tr>
 <!-- Utility rail: rank number + score meter, monospace -->
@@ -68,19 +98,36 @@ Mag
 
 <!-- Story body -->
 <td valign="top" style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
-<div style="font-family:Georgia,'Times New Roman',serif;font-size:17px;line-height:1.3;font-weight:bold;color:#1a1a1a;">
-<a href="{{ item.url }}" style="color:#1a1a1a;text-decoration:none;">{{ item.title }}</a>
+<div style="font-family:Georgia,'Times New Roman',serif;font-size:19px;line-height:1.35;font-weight:bold;color:#1a1a1a;">
+<a href="{{ item.url }}" style="color:#1a1a1a;text-decoration:none;">{{ item.headline or item.title }}</a>
 </div>
-<div style="font-family:'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;font-size:11px;color:#8a8878;text-transform:uppercase;letter-spacing:0.5px;padding-top:3px;">
+<div style="font-family:'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;font-size:11px;color:#8a8878;text-transform:uppercase;letter-spacing:0.5px;padding-top:5px;">
 {{ item.source }}{% if item.points %} &middot; {{ item.points }} pts{% endif %}
 </div>
 {% if item.blurb %}
-<div style="font-size:14px;line-height:1.5;color:#33322c;padding-top:6px;">
+<div style="font-size:15px;line-height:1.7;color:#33322c;padding-top:9px;">
 {{ item.blurb }}
 </div>
 {% endif %}
+{% if item.why_it_matters %}
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:10px;">
+<tr>
+<td style="border-left:3px solid #d8d6c9;padding:2px 0 2px 12px;">
+<span style="font-family:'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;font-size:10px;color:#c1512f;text-transform:uppercase;letter-spacing:1px;font-weight:bold;">Why it matters</span>
+<div style="font-size:14px;line-height:1.6;color:#4a4940;padding-top:3px;">
+{{ item.why_it_matters }}
+</div>
+</td>
+</tr>
+</table>
+{% endif %}
+{% if item.original_title and item.original_title != (item.headline or item.title) %}
+<div style="font-size:12px;line-height:1.4;color:#a09e92;padding-top:9px;">
+Published as: &ldquo;{{ item.original_title }}&rdquo;
+</div>
+{% endif %}
 {% if item.also_seen %}
-<div style="font-size:12px;line-height:1.4;color:#8a8878;padding-top:6px;font-style:italic;">
+<div style="font-size:12px;line-height:1.4;color:#8a8878;padding-top:5px;font-style:italic;">
 Also covered by {{ item.also_seen|map(attribute='source')|join(', ') }}
 </div>
 {% endif %}
@@ -91,6 +138,36 @@ Also covered by {{ item.also_seen|map(attribute='source')|join(', ') }}
 </tr>
 {% endfor %}
 {% endfor %}
+
+{% if meta.glossary %}
+<!-- Glossary -->
+<tr>
+<td style="padding:30px 32px 4px 32px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#faf9f4;border:1px solid #eceada;">
+<tr>
+<td style="padding:20px 22px;">
+<div style="font-family:Georgia,'Times New Roman',serif;font-size:19px;font-weight:bold;color:#1a1a1a;padding-bottom:4px;">
+Words used in this issue
+</div>
+<div style="font-size:13px;line-height:1.5;color:#8a8878;padding-bottom:12px;">
+Plain-English definitions for the technical terms above.
+</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+{% for entry in meta.glossary %}
+<tr>
+<td style="padding:6px 0;{% if not loop.last %}border-bottom:1px solid #eceada;{% endif %}">
+<span style="font-family:'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;font-size:13px;font-weight:bold;color:#1a1a1a;">{{ entry.term }}</span>
+<div style="font-size:14px;line-height:1.6;color:#4a4940;padding-top:2px;">{{ entry.definition }}</div>
+</td>
+</tr>
+{% endfor %}
+</table>
+</td>
+</tr>
+</table>
+</td>
+</tr>
+{% endif %}
 
 <!-- Footer -->
 <tr>

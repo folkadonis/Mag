@@ -97,14 +97,34 @@ topics:
     - "open weights"
 
 sources:
+  # Global recency window for RSS feeds. Several publishers (OpenAI,
+  # Hugging Face) serve their entire archive back to 2015 in a single feed,
+  # so without this the ranker drowns in years-old posts. Individual feeds
+  # may override with their own `lookback_hours` / `max_items`.
+  #
+  # A week is deliberately generous: most corporate engineering blogs
+  # publish weekly, not daily, so a 48h window drops the labs entirely.
+  # The `seen` store below is what stops a week-old story from being
+  # republished every morning.
+  lookback_hours: 168
+
   rss:
     # --- AI labs ---
-    - name: "Anthropic"
-      url: "https://www.anthropic.com/rss.xml"
-      weight: 1.5
+    # Anthropic and xAI publish no RSS feed of their own (every documented
+    # path 404s as of 2026-08), so they are covered through targeted Google
+    # News queries instead.
+    - name: "Anthropic (via news)"
+      url: "https://news.google.com/rss/search?q=Anthropic+OR+%22Claude+AI%22+when:2d&hl=en-US&gl=US&ceid=US:en"
+      weight: 1.4
       type: "blog"
+      max_items: 15
+    - name: "xAI / Grok (via news)"
+      url: "https://news.google.com/rss/search?q=%22xAI%22+OR+Grok+when:2d&hl=en-US&gl=US&ceid=US:en"
+      weight: 1.0
+      type: "blog"
+      max_items: 10
     - name: "OpenAI"
-      url: "https://openai.com/blog/rss.xml"
+      url: "https://openai.com/news/rss.xml"
       weight: 1.4
       type: "blog"
     - name: "Google DeepMind"
@@ -115,17 +135,13 @@ sources:
       url: "https://research.google/blog/rss/"
       weight: 1.3
       type: "blog"
-    - name: "Meta AI"
-      url: "https://ai.meta.com/blog/rss/"
-      weight: 1.3
-      type: "blog"
-    - name: "Mistral AI"
-      url: "https://mistral.ai/news/rss.xml"
+    - name: "Meta Engineering & AI"
+      url: "https://engineering.fb.com/feed/"
       weight: 1.2
       type: "blog"
-    - name: "xAI"
-      url: "https://x.ai/rss.xml"
-      weight: 1.1
+    - name: "Mistral AI"
+      url: "https://mistral.ai/news/rss"
+      weight: 1.2
       type: "blog"
     - name: "NVIDIA AI"
       url: "https://blogs.nvidia.com/feed/"
@@ -149,10 +165,8 @@ sources:
       type: "blog"
 
     # --- Big-tech engineering blogs ---
-    - name: "Uber Engineering"
-      url: "https://www.uber.com/blog/engineering/rss/"
-      weight: 0.8
-      type: "blog"
+    # Uber and X Engineering block automated feed access (406/403) and were
+    # dropped; Cloudflare, GitHub and Airbnb replace them.
     - name: "Netflix Tech Blog"
       url: "https://netflixtechblog.com/feed"
       weight: 0.9
@@ -161,33 +175,62 @@ sources:
       url: "https://aws.amazon.com/blogs/machine-learning/feed/"
       weight: 1.0
       type: "blog"
-    - name: "X Engineering"
-      url: "https://blog.twitter.com/engineering/en_us/blog.rss"
-      weight: 0.8
+    - name: "Cloudflare Blog"
+      url: "https://blog.cloudflare.com/rss/"
+      weight: 0.9
       type: "blog"
-
+    - name: "GitHub Engineering"
+      url: "https://github.blog/engineering/feed/"
+      weight: 0.9
+      type: "blog"
     # --- Security / hacker news ---
     - name: "The Hacker News"
       url: "https://feeds.feedburner.com/TheHackersNews"
       weight: 0.9
       type: "blog"
+      max_items: 20
     - name: "Krebs on Security"
       url: "https://krebsonsecurity.com/feed/"
       weight: 0.9
       type: "blog"
 
+    # --- Local / self-hosted inference ---
+    - name: "Ollama Releases"
+      url: "https://github.com/ollama/ollama/releases.atom"
+      weight: 0.9
+      type: "blog"
+      max_items: 5
+    - name: "llama.cpp Releases"
+      url: "https://github.com/ggml-org/llama.cpp/releases.atom"
+      weight: 0.7
+      type: "blog"
+      max_items: 3
+    - name: "vLLM Releases"
+      url: "https://github.com/vllm-project/vllm/releases.atom"
+      weight: 0.8
+      type: "blog"
+      max_items: 3
+    - name: "r/LocalLLaMA"
+      url: "https://www.reddit.com/r/LocalLLaMA/top/.rss?t=day"
+      weight: 0.9
+      type: "blog"
+      max_items: 15
+
   arxiv:
     base_url: "http://export.arxiv.org/api/query"
     categories: ["cs.CL", "cs.AI", "cs.LG"]
     max_results: 60
-    lookback_hours: 30
+    # arXiv does not publish at weekends, so a 30h window returns nothing at
+    # all on Mondays. 96h spans the gap.
+    lookback_hours: 96
+    timeout_seconds: 60   # arXiv is slow and frequently times out at 20s
     weight: 1.0
     type: "paper"
 
   hn:
     base_url: "https://hn.algolia.com/api/v1/search_by_date"
     min_points: 80
-    lookback_hours: 30
+    lookback_hours: 36
     weight: 1.2
     type: "hn"
 
@@ -196,10 +239,26 @@ sources:
     weight: 1.15
     type: "paper"
 
+# Cross-run memory, so a story published in Monday's issue does not come
+# back on Tuesday. Stored in archive/seen.json (committed by CI so the
+# memory survives between scheduled runs).
+seen:
+  enabled: true
+  retention_days: 30
+
 editor:
-  model: "claude-sonnet-5"
-  max_tokens: 4000
+  # backend: how the editorial pass reaches Claude.
+  #   auto — use the Claude Code CLI if it is installed (Pro/Max
+  #          subscription auth, no API key needed), else fall back to
+  #          ANTHROPIC_API_KEY.
+  #   cli  — force the subscription CLI.
+  #   api  — force the metered API; requires ANTHROPIC_API_KEY.
+  backend: "auto"
+  model: "sonnet"               # CLI alias; resolves to the latest Sonnet
+  api_model: "claude-sonnet-5"  # used only by the `api` backend
+  max_tokens: 16000             # the plain-language format is verbose
   max_stories_considered: 60
+  cli_timeout_seconds: 300
 
 email:
   subject_prefix: "Mag — Daily AI Digest"

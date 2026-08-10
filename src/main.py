@@ -16,12 +16,13 @@ from pathlib import Path
 
 import yaml
 
-from src import editor, mailer, rank, render, sources
+from src import editor, mailer, rank, render, seen, sources
 
 logger = logging.getLogger("mag.main")
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 ARCHIVE_DIR = REPO_ROOT / "archive"
+SEEN_PATH = ARCHIVE_DIR / "seen.json"
 
 
 def load_config(path: Path) -> dict:
@@ -29,18 +30,36 @@ def load_config(path: Path) -> dict:
         return yaml.safe_load(f)
 
 
-def build_meta(config: dict, fetched: list[dict], sections: list[dict], edited: bool) -> dict:
+def build_meta(
+    config: dict,
+    sections: list[dict],
+    edited: bool,
+    extras: dict | None = None,
+) -> dict:
     now = datetime.now(timezone.utc)
     total_stories = sum(len(section.get("items", [])) for section in sections)
-    sources_count = len({item.get("source") for item in fetched if item.get("source")})
+    # Count the sources actually represented in the issue, not everything
+    # that was fetched — the masthead claim should match what the reader
+    # can see.
+    sources_count = len(
+        {
+            item.get("source")
+            for section in sections
+            for item in section.get("items", [])
+            if item.get("source")
+        }
+    )
     email_cfg = config.get("email", {})
-    date_str = now.strftime("%B %-d, %Y") if os.name != "nt" else now.strftime("%B %d, %Y")
+    date_str = now.strftime("%B %-d, %Y") if os.name != "nt" else now.strftime("%B %d, %Y").replace(" 0", " ")
+    extras = extras or {}
 
     return {
         "date": date_str,
         "subject": f"{email_cfg.get('subject_prefix', 'Mag')} — {date_str}",
         "total_stories": total_stories,
         "sources_count": sources_count,
+        "overview": extras.get("overview", ""),
+        "glossary": extras.get("glossary", []),
         "footer_note": "edited by Claude" if edited else "unedited feed digest",
     }
 
@@ -49,6 +68,16 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Build and send the Mag daily AI digest.")
     parser.add_argument("--dry-run", action="store_true", help="Build and archive the digest without emailing it.")
     parser.add_argument("--no-llm", action="store_true", help="Skip the Claude editor call; publish the raw feed digest.")
+    parser.add_argument(
+        "--ignore-seen",
+        action="store_true",
+        help="Consider stories already published in earlier issues (useful when testing).",
+    )
+    parser.add_argument(
+        "--record-seen",
+        action="store_true",
+        help="Update the seen store even on a --dry-run (normally dry runs leave it untouched).",
+    )
     parser.add_argument("--config", default=str(REPO_ROOT / "config.yaml"), help="Path to config.yaml.")
     return parser.parse_args(argv)
 
@@ -73,8 +102,16 @@ def run(argv: list[str] | None = None) -> Path:
     ranked = rank.rank(fetched, config)
     logger.info("%d stories survived topic filter + dedupe", len(ranked))
 
+    seen_cfg = config.get("seen", {})
+    seen_enabled = bool(seen_cfg.get("enabled", True))
+    seen_store = seen.prune(seen.load(SEEN_PATH), int(seen_cfg.get("retention_days", 30)))
+    if seen_enabled and not args.ignore_seen:
+        ranked = seen.filter_unseen(ranked, seen_store)
+        logger.info("%d stories remain after removing ones already published", len(ranked))
+
     max_n = int(config.get("editor", {}).get("max_stories_considered", 60))
     edited_ok = False
+    extras: dict = {}
 
     if args.no_llm:
         considered = editor.build_considered(ranked, max_n)
@@ -83,11 +120,12 @@ def run(argv: list[str] | None = None) -> Path:
         parsed, considered = editor.run_editor(ranked, config)
         if parsed is not None:
             sections = editor.hydrate(parsed, considered)
+            extras = editor.extract_extras(parsed)
             edited_ok = True
         else:
             sections = editor.fallback_digest(considered)
 
-    meta = build_meta(config, fetched, sections, edited_ok)
+    meta = build_meta(config, sections, edited_ok, extras)
 
     html_body = render.render_html(sections, meta)
     text_body = render.render_text(sections, meta)
@@ -104,6 +142,11 @@ def run(argv: list[str] | None = None) -> Path:
         logger.info("--dry-run set: skipping email send. %d stories in %d sections.", meta["total_stories"], len(sections))
     else:
         mailer.send_email(meta["subject"], html_body, text_body)
+
+    # Record only after the issue has genuinely gone out, so a failed send
+    # doesn't burn the stories it would have contained.
+    if seen_enabled and (not args.dry_run or args.record_seen):
+        seen.record(sections, seen_store, SEEN_PATH)
 
     return latest_path
 

@@ -11,6 +11,7 @@ utility rail showing each story's rank number and a 5-cell score meter.
 from __future__ import annotations
 
 import os
+import textwrap
 from typing import Any
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
@@ -50,32 +51,62 @@ def render_html(sections: list[dict[str, Any]], meta: dict[str, Any]) -> str:
     return template.render(sections=sections, meta=meta)
 
 
+def _wrap(text: str, indent: str = "      ", width: int = 74) -> list[str]:
+    """Hard-wrap a paragraph so the plain-text edition stays readable in
+    terminals and text-only mail clients."""
+    if not text:
+        return []
+    return textwrap.wrap(text, width=width, initial_indent=indent, subsequent_indent=indent)
+
+
 def render_text(sections: list[dict[str, Any]], meta: dict[str, Any]) -> str:
     prepare_sections(sections)
     lines: list[str] = []
     lines.append(f"MAG — {meta.get('date', '')}")
     lines.append(f"{meta.get('total_stories', 0)} stories from {meta.get('sources_count', 0)} sources")
-    lines.append("=" * 60)
+    lines.append("=" * 78)
+
+    if meta.get("overview"):
+        lines.append("")
+        lines.append("START HERE")
+        lines.extend(_wrap(meta["overview"], indent=""))
 
     for section in sections:
         lines.append("")
+        lines.append("")
         lines.append(section["name"].upper())
         lines.append("-" * len(section["name"]))
+        if section.get("intro"):
+            lines.extend(_wrap(section["intro"], indent=""))
+        lines.append("")
         for item in section.get("items", []):
             rank = item.get("rank_position", "?")
             meter = "#" * item.get("meter_filled", 0) + "." * item.get("meter_empty", 0)
-            lines.append(f"[{rank:>3}] ({meter}) {item['title']}")
+            lines.append(f"[{rank:>3}] ({meter}) {item.get('headline') or item['title']}")
             lines.append(f"      {item.get('source', '')}")
-            blurb = item.get("blurb") or ""
-            if blurb:
-                lines.append(f"      {blurb}")
+            lines.extend(_wrap(item.get("blurb") or ""))
+            if item.get("why_it_matters"):
+                lines.append("      WHY IT MATTERS:")
+                lines.extend(_wrap(item["why_it_matters"], indent="        "))
+            original = item.get("original_title")
+            if original and original != (item.get("headline") or item["title"]):
+                lines.extend(_wrap(f'Published as: "{original}"'))
             also_seen = item.get("also_seen") or []
             if also_seen:
                 sources = ", ".join(a["source"] for a in also_seen)
-                lines.append(f"      Also covered by {sources}")
+                lines.extend(_wrap(f"Also covered by {sources}"))
             lines.append(f"      {item['url']}")
             lines.append("")
 
-    lines.append("-" * 60)
+    if meta.get("glossary"):
+        lines.append("")
+        lines.append("WORDS USED IN THIS ISSUE")
+        lines.append("-" * 24)
+        for entry in meta["glossary"]:
+            lines.append(f"  {entry['term']}")
+            lines.extend(_wrap(entry["definition"], indent="    "))
+            lines.append("")
+
+    lines.append("-" * 78)
     lines.append(meta.get("footer_note", ""))
     return "\n".join(lines)

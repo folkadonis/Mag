@@ -2,6 +2,8 @@ name: Daily AI Digest
 
 on:
   schedule:
+    # 01:00 UTC daily. GitHub's scheduler is best-effort and often runs
+    # 5-20 minutes late under load; that is normal and harmless here.
     - cron: "0 1 * * *"
   workflow_dispatch:
     inputs:
@@ -11,6 +13,10 @@ on:
         default: false
       no_llm:
         description: "Skip the Claude editor call and publish the raw feed digest"
+        type: boolean
+        default: false
+      ignore_seen:
+        description: "Allow stories that were already published in an earlier issue"
         type: boolean
         default: false
 
@@ -24,7 +30,7 @@ concurrency:
 jobs:
   digest:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -35,6 +41,16 @@ jobs:
           python-version: "3.12"
           cache: "pip"
 
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install Claude Code
+        # The editorial pass runs through the Claude Code CLI so it bills
+        # against a Claude Pro/Max subscription instead of the metered API.
+        run: npm install -g @anthropic-ai/claude-code
+
       - name: Install dependencies
         run: pip install -r requirements.txt
 
@@ -43,8 +59,10 @@ jobs:
 
       - name: Build and send digest
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          # Mint with `claude setup-token` on a machine where you are logged
+          # in, then store the value as a repository secret. Works with a
+          # Pro subscription; no ANTHROPIC_API_KEY required.
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           SMTP_HOST: ${{ secrets.SMTP_HOST }}
           SMTP_PORT: ${{ secrets.SMTP_PORT }}
           SMTP_USER: ${{ secrets.SMTP_USER }}
@@ -55,9 +73,12 @@ jobs:
           ARGS=""
           if [ "${{ inputs.dry_run }}" = "true" ]; then ARGS="$ARGS --dry-run"; fi
           if [ "${{ inputs.no_llm }}" = "true" ]; then ARGS="$ARGS --no-llm"; fi
+          if [ "${{ inputs.ignore_seen }}" = "true" ]; then ARGS="$ARGS --ignore-seen"; fi
           python -m src.main $ARGS
 
       - name: Commit archived digest
+        # archive/seen.json is what stops tomorrow's issue from repeating
+        # today's stories, so it must be committed alongside the HTML.
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -66,5 +87,6 @@ jobs:
             echo "No archive changes to commit"
           else
             git commit -m "Archive digest for $(date -u +%Y-%m-%d)"
+            git pull --rebase --autostash
             git push
           fi
