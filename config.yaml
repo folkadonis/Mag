@@ -49,9 +49,56 @@ topics:
     - "hugging face"
     - "mixture of experts"
     - "moe"
+    # Security / hacker-news signal (for The Hacker News, Krebs on Security)
+    - "vulnerability"
+    - "exploit"
+    - "cve-"
+    - "zero-day"
+    - "ransomware"
+    - "malware"
+    - "cybersecurity"
+    - "data breach"
+    - "phishing"
+    - "supply chain attack"
+    - "hacked"
+    - "security flaw"
+    - "patch"
+    # General tech-industry / engineering-blog signal (for Uber, Netflix,
+    # Amazon, X, and other company engineering blogs)
+    - "engineering blog"
+    - "infrastructure"
+    - "distributed system"
+    - "scalability"
+    - "kubernetes"
+    - "cloud native"
+    - "platform engineering"
+    - "system design"
+    - "open source"
+    - "microservice"
+    - "outage"
+    - "incident report"
+    - "api"
+    # Local / edge / self-hosted model inference
+    - "self-host"
+    - "self hosted"
+    - "on-device"
+    - "edge inference"
+    - "local inference"
+    - "local llm"
+    - "ollama"
+    - "llama.cpp"
+    - "gguf"
+    - "raspberry pi"
+    - "mobile inference"
+    - "home server"
+    - "apple silicon"
+    - "mlx"
+    - "model release"
+    - "open weights"
 
 sources:
   rss:
+    # --- AI labs ---
     - name: "Anthropic"
       url: "https://www.anthropic.com/rss.xml"
       weight: 1.5
@@ -64,6 +111,30 @@ sources:
       url: "https://deepmind.google/blog/rss.xml"
       weight: 1.4
       type: "blog"
+    - name: "Google Research"
+      url: "https://research.google/blog/rss/"
+      weight: 1.3
+      type: "blog"
+    - name: "Meta AI"
+      url: "https://ai.meta.com/blog/rss/"
+      weight: 1.3
+      type: "blog"
+    - name: "Mistral AI"
+      url: "https://mistral.ai/news/rss.xml"
+      weight: 1.2
+      type: "blog"
+    - name: "xAI"
+      url: "https://x.ai/rss.xml"
+      weight: 1.1
+      type: "blog"
+    - name: "NVIDIA AI"
+      url: "https://blogs.nvidia.com/feed/"
+      weight: 1.1
+      type: "blog"
+    - name: "Microsoft Research"
+      url: "https://www.microsoft.com/en-us/research/feed/"
+      weight: 1.1
+      type: "blog"
     - name: "Hugging Face"
       url: "https://huggingface.co/blog/feed.xml"
       weight: 1.1
@@ -75,6 +146,34 @@ sources:
     - name: "TechCrunch AI"
       url: "https://techcrunch.com/category/artificial-intelligence/feed/"
       weight: 0.8
+      type: "blog"
+
+    # --- Big-tech engineering blogs ---
+    - name: "Uber Engineering"
+      url: "https://www.uber.com/blog/engineering/rss/"
+      weight: 0.8
+      type: "blog"
+    - name: "Netflix Tech Blog"
+      url: "https://netflixtechblog.com/feed"
+      weight: 0.9
+      type: "blog"
+    - name: "AWS Machine Learning"
+      url: "https://aws.amazon.com/blogs/machine-learning/feed/"
+      weight: 1.0
+      type: "blog"
+    - name: "X Engineering"
+      url: "https://blog.twitter.com/engineering/en_us/blog.rss"
+      weight: 0.8
+      type: "blog"
+
+    # --- Security / hacker news ---
+    - name: "The Hacker News"
+      url: "https://feeds.feedburner.com/TheHackersNews"
+      weight: 0.9
+      type: "blog"
+    - name: "Krebs on Security"
+      url: "https://krebsonsecurity.com/feed/"
+      weight: 0.9
       type: "blog"
 
   arxiv:

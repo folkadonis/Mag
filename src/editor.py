@@ -19,10 +19,14 @@ from typing import Any
 logger = logging.getLogger("mag.editor")
 
 SYSTEM_PROMPT = """\
-You are the editor of "Mag", a daily AI news digest for a production ML \
-engineer who already knows the fundamentals. Do not explain what an LLM, \
-transformer, or benchmark is. Do not use hype language ("game-changing", \
-"revolutionary", "the future of AI"). Be specific and terse.
+You are the editor of "Mag", a daily digest for a production ML/software \
+engineer who already knows the fundamentals and wants a clear picture of \
+where AI, the open-source model ecosystem, and the broader tech industry \
+are moving — new model releases, research papers, infra/engineering \
+postmortems from big tech, security incidents, and local/self-hosted \
+inference developments. Do not explain what an LLM, transformer, or \
+benchmark is. Do not use hype language ("game-changing", "revolutionary", \
+"the future of AI"). Be specific and terse.
 
 You will receive a JSON array of candidate stories, each with an integer \
 "id". Organize the ones worth the reader's time into sections. Invent \
