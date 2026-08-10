@@ -1,0 +1,107 @@
+# Mag — Daily AI News Digest configuration
+# Every feed, weight, and threshold used by the pipeline lives here so that
+# tuning the digest never requires touching code.
+
+scoring:
+  recency_half_life_hours: 24   # recency_decay = 0.5 at this age
+  dedupe_jaccard_threshold: 0.5
+
+topics:
+  # Substring match (case-insensitive) against title + summary.
+  # Items whose type is "paper" are exempt from this filter entirely.
+  keywords:
+    - "ai"
+    - "artificial intelligence"
+    - "llm"
+    - "large language model"
+    - "language model"
+    - "transformer"
+    - "gpt"
+    - "claude"
+    - "gemini"
+    - "anthropic"
+    - "openai"
+    - "deepmind"
+    - "diffusion model"
+    - "reinforcement learning"
+    - "fine-tun"
+    - "finetun"
+    - "inference"
+    - "agent"
+    - "benchmark"
+    - "dataset"
+    - "neural network"
+    - "machine learning"
+    - "deep learning"
+    - "rag"
+    - "retrieval augmented"
+    - "multimodal"
+    - "vision-language"
+    - "alignment"
+    - "ai safety"
+    - "open source model"
+    - "open-weight"
+    - "quantiz"
+    - "pretrain"
+    - "embedding"
+    - "chatbot"
+    - "generative"
+    - "hugging face"
+    - "mixture of experts"
+    - "moe"
+
+sources:
+  rss:
+    - name: "Anthropic"
+      url: "https://www.anthropic.com/rss.xml"
+      weight: 1.5
+      type: "blog"
+    - name: "OpenAI"
+      url: "https://openai.com/blog/rss.xml"
+      weight: 1.4
+      type: "blog"
+    - name: "Google DeepMind"
+      url: "https://deepmind.google/blog/rss.xml"
+      weight: 1.4
+      type: "blog"
+    - name: "Hugging Face"
+      url: "https://huggingface.co/blog/feed.xml"
+      weight: 1.1
+      type: "blog"
+    - name: "Simon Willison"
+      url: "https://simonwillison.net/atom/everything/"
+      weight: 1.3
+      type: "blog"
+    - name: "TechCrunch AI"
+      url: "https://techcrunch.com/category/artificial-intelligence/feed/"
+      weight: 0.8
+      type: "blog"
+
+  arxiv:
+    base_url: "http://export.arxiv.org/api/query"
+    categories: ["cs.CL", "cs.AI", "cs.LG"]
+    max_results: 60
+    lookback_hours: 30
+    weight: 1.0
+    type: "paper"
+
+  hn:
+    base_url: "https://hn.algolia.com/api/v1/search_by_date"
+    min_points: 80
+    lookback_hours: 30
+    weight: 1.2
+    type: "hn"
+
+  hf_daily_papers:
+    base_url: "https://huggingface.co/api/daily_papers"
+    weight: 1.15
+    type: "paper"
+
+editor:
+  model: "claude-sonnet-5"
+  max_tokens: 4000
+  max_stories_considered: 60
+
+email:
+  subject_prefix: "Mag — Daily AI Digest"
+  from_name: "Mag"

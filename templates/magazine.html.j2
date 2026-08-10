@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ meta.subject }}</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f2f1ec;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f2f1ec;">
+<tr>
+<td align="center" style="padding:24px 12px;">
+
+<table role="presentation" width="640" cellpadding="0" cellspacing="0" border="0" style="width:640px;max-width:640px;background-color:#ffffff;border:1px solid #e2e0d6;">
+
+<!-- Masthead -->
+<tr>
+<td style="padding:28px 32px 16px 32px;border-bottom:3px solid #1a1a1a;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+<tr>
+<td style="font-family:Georgia,'Times New Roman',serif;font-size:34px;line-height:1.1;font-weight:bold;color:#1a1a1a;letter-spacing:-0.5px;">
+Mag
+</td>
+</tr>
+<tr>
+<td style="padding-top:6px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:13px;color:#6b6a63;text-transform:uppercase;letter-spacing:1px;">
+{{ meta.date }} &middot; {{ meta.total_stories }} stories from {{ meta.sources_count }} sources
+</td>
+</tr>
+</table>
+</td>
+</tr>
+
+{% for section in sections %}
+<!-- Section: {{ section.name }} -->
+<tr>
+<td style="padding:28px 32px 4px 32px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+<tr>
+<td style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:bold;color:#1a1a1a;border-bottom:1px solid #d8d6c9;padding-bottom:8px;">
+{{ section.name }}
+</td>
+</tr>
+</table>
+</td>
+</tr>
+
+{% for item in section['items'] %}
+<tr>
+<td style="padding:14px 32px;{% if not loop.last %}border-bottom:1px solid #efeee6;{% endif %}">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+<tr>
+<!-- Utility rail: rank number + score meter, monospace -->
+<td valign="top" width="52" style="width:52px;font-family:'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;font-size:12px;color:#8a8878;padding-right:12px;">
+<div style="font-size:15px;font-weight:bold;color:#1a1a1a;">#{{ "%02d"|format(item.rank_position) }}</div>
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-top:6px;">
+<tr>
+{% for i in range(item.meter_filled) %}
+<td width="7" height="7" style="width:7px;height:7px;background-color:#c1512f;font-size:1px;line-height:1px;">&nbsp;</td>
+<td width="2" style="width:2px;font-size:1px;line-height:1px;">&nbsp;</td>
+{% endfor %}
+{% for i in range(item.meter_empty) %}
+<td width="7" height="7" style="width:7px;height:7px;background-color:#e5e3d6;font-size:1px;line-height:1px;">&nbsp;</td>
+<td width="2" style="width:2px;font-size:1px;line-height:1px;">&nbsp;</td>
+{% endfor %}
+</tr>
+</table>
+</td>
+
+<!-- Story body -->
+<td valign="top" style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+<div style="font-family:Georgia,'Times New Roman',serif;font-size:17px;line-height:1.3;font-weight:bold;color:#1a1a1a;">
+<a href="{{ item.url }}" style="color:#1a1a1a;text-decoration:none;">{{ item.title }}</a>
+</div>
+<div style="font-family:'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;font-size:11px;color:#8a8878;text-transform:uppercase;letter-spacing:0.5px;padding-top:3px;">
+{{ item.source }}{% if item.points %} &middot; {{ item.points }} pts{% endif %}
+</div>
+{% if item.blurb %}
+<div style="font-size:14px;line-height:1.5;color:#33322c;padding-top:6px;">
+{{ item.blurb }}
+</div>
+{% endif %}
+{% if item.also_seen %}
+<div style="font-size:12px;line-height:1.4;color:#8a8878;padding-top:6px;font-style:italic;">
+Also covered by {{ item.also_seen|map(attribute='source')|join(', ') }}
+</div>
+{% endif %}
+</td>
+</tr>
+</table>
+</td>
+</tr>
+{% endfor %}
+{% endfor %}
+
+<!-- Footer -->
+<tr>
+<td style="padding:24px 32px 32px 32px;border-top:3px solid #1a1a1a;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+<tr>
+<td style="font-family:'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;font-size:11px;color:#8a8878;line-height:1.6;">
+Mag &middot; generated {{ meta.date }} &middot; {{ meta.footer_note }}
+</td>
+</tr>
+</table>
+</td>
+</tr>
+
+</table>
+
+</td>
+</tr>
+</table>
+</body>
+</html>
