@@ -4,9 +4,11 @@ A daily email magazine about AI, open-source models, security, and the wider
 tech industry. It fetches ~25 sources, filters and ranks them, has Claude
 write the issue in plain English, and mails it to you.
 
-The editorial pass runs through the **Claude Code CLI**, so it bills against a
-**Claude Pro/Max subscription**. No `ANTHROPIC_API_KEY` and no pay-as-you-go
-API credit is required.
+The editorial pass calls Claude. `editor.backend` in `config.yaml` picks how:
+`api` (the default here) uses `ANTHROPIC_API_KEY`, billed per-use, no CLI or
+subscription needed. `cli` runs through the Claude Code CLI instead, billing
+against a Pro/Max subscription — set that only if you'd rather not pay
+per-use and are willing to mint a token from a terminal (see below).
 
 ## What the issue looks like
 
@@ -53,7 +55,12 @@ python -m venv .venv
 # source .venv/bin/activate && pip install -r requirements.txt   # macOS/Linux
 ```
 
-You also need the Claude Code CLI on your PATH, logged in once interactively:
+With the default `editor.backend: api`, set `ANTHROPIC_API_KEY` (from
+console.anthropic.com) in your `.env` — that's it, no CLI needed.
+
+To use a Claude Pro/Max subscription instead, set `editor.backend: cli` in
+`config.yaml` and install the Claude Code CLI on your PATH, logged in once
+interactively:
 
 ```bash
 npm install -g @anthropic-ai/claude-code
@@ -92,17 +99,11 @@ Output lands in `archive/YYYY-MM-DD.html` and `archive/latest.html`.
 `.github/workflows/daily.yml` runs the pipeline at 01:00 UTC and commits the
 archive back to the repo.
 
-Mint a subscription token on a machine where you are logged in:
-
-```bash
-claude setup-token
-```
-
-Then add these repository secrets (Settings → Secrets and variables → Actions):
+Add these repository secrets (Settings → Secrets and variables → Actions):
 
 | Secret | Value |
 | --- | --- |
-| `CLAUDE_CODE_OAUTH_TOKEN` | Output of `claude setup-token` |
+| `ANTHROPIC_API_KEY` | From console.anthropic.com. Only needed with the default `editor.backend: api`. |
 | `SMTP_HOST` | `smtp.gmail.com` |
 | `SMTP_PORT` | `465` |
 | `SMTP_USER` | Your Gmail address |
@@ -111,6 +112,11 @@ Then add these repository secrets (Settings → Secrets and variables → Action
 | `EMAIL_FROM` | Optional; defaults to `Mag <SMTP_USER>` |
 
 Trigger a manual run from the Actions tab to test before relying on the cron.
+
+If you switch `editor.backend` to `cli` instead, replace `ANTHROPIC_API_KEY`
+with a `CLAUDE_CODE_OAUTH_TOKEN` secret (output of `claude setup-token`, run
+on a machine where you're logged into your Pro/Max subscription), and add
+back the `Set up Node` + `Install Claude Code` steps to `daily.yml`.
 
 Email is optional: if `EMAIL_TO` isn't set, `src/main.py` skips sending and just
 writes the archive — see **Hosting on Vercel** below for a mail-free setup.
@@ -143,7 +149,10 @@ keywords, the recency and dedupe thresholds, and the editor settings. Notably:
   the seen store is what prevents repeats.
 - `seen.retention_days` (default 30) — how long a published story is
   remembered. `archive/seen.json` holds this memory and is committed by CI.
-- `editor.backend` — `auto` (CLI if installed, else API key), `cli`, or `api`.
+- `editor.backend` — `api` (default here; needs `ANTHROPIC_API_KEY`), `cli`
+  (subscription auth via the Claude Code CLI), or `auto` (CLI if installed,
+  else API key — avoid in CI, since installing the CLI makes `auto` always
+  pick `cli` regardless of whether it's actually authenticated).
 - `editor.max_stories_considered` (default 60) — how many ranked stories the
   editor gets to choose from. It typically publishes 12-20.
 

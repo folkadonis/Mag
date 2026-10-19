@@ -253,7 +253,7 @@ editor:
   #          ANTHROPIC_API_KEY.
   #   cli  — force the subscription CLI.
   #   api  — force the metered API; requires ANTHROPIC_API_KEY.
-  backend: "auto"
+  backend: "api"
   model: "sonnet"               # CLI alias; resolves to the latest Sonnet
   api_model: "claude-sonnet-5"  # used only by the `api` backend
   max_tokens: 16000             # the plain-language format is verbose

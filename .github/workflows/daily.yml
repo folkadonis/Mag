@@ -41,16 +41,6 @@ jobs:
           python-version: "3.12"
           cache: "pip"
 
-      - name: Set up Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-
-      - name: Install Claude Code
-        # The editorial pass runs through the Claude Code CLI so it bills
-        # against a Claude Pro/Max subscription instead of the metered API.
-        run: npm install -g @anthropic-ai/claude-code
-
       - name: Install dependencies
         run: pip install -r requirements.txt
 
@@ -59,10 +49,9 @@ jobs:
 
       - name: Build and send digest
         env:
-          # Mint with `claude setup-token` on a machine where you are logged
-          # in, then store the value as a repository secret. Works with a
-          # Pro subscription; no ANTHROPIC_API_KEY required.
-          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # editor.backend is "api" in config.yaml, so only this is needed
+          # (console.anthropic.com), billed per-use — no CLI, no subscription.
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           SMTP_HOST: ${{ secrets.SMTP_HOST }}
           SMTP_PORT: ${{ secrets.SMTP_PORT }}
           SMTP_USER: ${{ secrets.SMTP_USER }}
