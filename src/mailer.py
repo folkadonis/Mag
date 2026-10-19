@@ -83,6 +83,13 @@ def _send_via_smtp(subject: str, html_body: str, text_body: str, to_addr: str, f
     logger.info("Sent digest via SMTP (%s:%d) to %s", host, port, to_addr)
 
 
+def is_configured() -> bool:
+    """True if enough env vars are present to even attempt a send. Lets
+    callers treat "no email set up" as a deliberate skip rather than an
+    error — e.g. when the archive/Vercel page is the real publish target."""
+    return bool(os.environ.get("EMAIL_TO"))
+
+
 def send_email(subject: str, html_body: str, text_body: str) -> None:
     to_addr = os.environ.get("EMAIL_TO")
     from_addr = os.environ.get("EMAIL_FROM")

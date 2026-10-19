@@ -112,6 +112,27 @@ Then add these repository secrets (Settings → Secrets and variables → Action
 
 Trigger a manual run from the Actions tab to test before relying on the cron.
 
+Email is optional: if `EMAIL_TO` isn't set, `src/main.py` skips sending and just
+writes the archive — see **Hosting on Vercel** below for a mail-free setup.
+A send failure (bad SMTP creds, etc.) is logged and swallowed rather than
+crashing the run, so the archive always gets committed either way.
+
+## Hosting on Vercel
+
+Skip email entirely and just read the issue at a URL. The daily workflow
+already commits `archive/latest.html` on every run; `vercel.json` rewrites
+`/` to it, so once the repo is connected the site always shows the newest
+issue with zero extra secrets.
+
+1. [vercel.com](https://vercel.com) → **Add New… → Project** → import
+   `folkadonis/Mag`.
+2. Framework Preset: **Other**. Leave Build Command and Output Directory
+   blank — there is nothing to build, it's served as static files.
+3. Deploy. Every push to the default branch (including the daily archive
+   commit from GitHub Actions) triggers a redeploy automatically.
+4. Visit the assigned `*.vercel.app` URL — it shows the latest issue.
+   Older issues stay reachable at `/archive/YYYY-MM-DD.html`.
+
 ## Tuning
 
 Everything tunable lives in `config.yaml` — feeds and their weights, topic

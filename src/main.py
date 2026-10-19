@@ -140,8 +140,16 @@ def run(argv: list[str] | None = None) -> Path:
 
     if args.dry_run:
         logger.info("--dry-run set: skipping email send. %d stories in %d sections.", meta["total_stories"], len(sections))
+    elif not mailer.is_configured():
+        logger.info("No EMAIL_TO configured: skipping email send. archive/latest.html is the published output.")
     else:
-        mailer.send_email(meta["subject"], html_body, text_body)
+        # The archive is the real publish event (and what Vercel serves);
+        # a broken mail transport must never take that down with it, so a
+        # send failure is logged and swallowed rather than raised.
+        try:
+            mailer.send_email(meta["subject"], html_body, text_body)
+        except Exception as exc:  # noqa: BLE001
+            logger.error("Email delivery failed, but the archive was still published: %s", exc)
 
     # Record only after the issue has genuinely gone out, so a failed send
     # doesn't burn the stories it would have contained.
