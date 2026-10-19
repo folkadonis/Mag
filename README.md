@@ -134,10 +134,22 @@ issue with zero extra secrets.
    `folkadonis/Mag`.
 2. Framework Preset: **Other**. Leave Build Command and Output Directory
    blank — there is nothing to build, it's served as static files.
-3. Deploy. Every push to the default branch (including the daily archive
-   commit from GitHub Actions) triggers a redeploy automatically.
-4. Visit the assigned `*.vercel.app` URL — it shows the latest issue.
-   Older issues stay reachable at `/archive/YYYY-MM-DD.html`.
+3. Deploy. Visit the assigned `*.vercel.app` URL — it shows the latest
+   issue. Older issues stay reachable at `/archive/YYYY-MM-DD.html`.
+
+Vercel's GitHub webhook integration is supposed to auto-redeploy on every
+push, but on this project it wasn't firing (the deployments never showed
+up as webhook-triggered — unclear why, possibly a one-off linking glitch
+from how the project was created). `daily.yml`'s **Deploy to Vercel** step
+works around it by calling Vercel's deployment API directly after the
+archive commit. It needs a `VERCEL_TOKEN` repository secret:
+
+1. vercel.com → Account Settings → **Tokens** → Create.
+2. Add it as the `VERCEL_TOKEN` repo secret.
+
+Without that secret the step just logs a skip message rather than failing
+the run — if Vercel's own webhook integration starts working on its own at
+some point, this step becomes redundant but harmless.
 
 ## Tuning
 

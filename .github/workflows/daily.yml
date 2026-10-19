@@ -66,6 +66,7 @@ jobs:
           python -m src.main $ARGS
 
       - name: Commit archived digest
+        id: archive
         # archive/seen.json is what stops tomorrow's issue from repeating
         # today's stories, so it must be committed alongside the HTML.
         run: |
@@ -74,8 +75,48 @@ jobs:
           git add archive/
           if git diff --cached --quiet; then
             echo "No archive changes to commit"
+            echo "committed=false" >> "$GITHUB_OUTPUT"
           else
             git commit -m "Archive digest for $(date -u +%Y-%m-%d)"
             git pull --rebase --autostash
             git push
+            echo "committed=true" >> "$GITHUB_OUTPUT"
           fi
+
+      - name: Deploy to Vercel
+        # Vercel's GitHub webhook integration on this project isn't firing
+        # auto-deploys on push (unconfirmed why), so trigger the deploy
+        # directly instead of depending on it. Needs a VERCEL_TOKEN repo
+        # secret (vercel.com -> Account Settings -> Tokens); the team and
+        # project ids below aren't secret, just identifiers.
+        if: steps.archive.outputs.committed == 'true'
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo "VERCEL_TOKEN not set; skipping Vercel deploy (Vercel's own git integration may or may not pick this up on its own)."
+            exit 0
+          fi
+          curl -sS -X POST \
+            "https://api.vercel.com/v13/deployments?teamId=team_NubkLpGQJOVRMIqLPDE6BKov" \
+            -H "Authorization: Bearer $VERCEL_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "name": "mag",
+              "project": "prj_4xwGCjiVWQu8GWgJnTENaJBgQTEy",
+              "target": "production",
+              "gitSource": {
+                "type": "github",
+                "org": "folkadonis",
+                "repo": "Mag",
+                "ref": "claude/mag-ai-news-digest-mnqkge"
+              }
+            }' | tee /tmp/vercel_deploy.json
+          echo
+          python3 -c "
+          import json
+          d = json.load(open('/tmp/vercel_deploy.json'))
+          if 'error' in d:
+              raise SystemExit(f\"Vercel deploy failed: {d['error']}\")
+          print(f\"Vercel deployment queued: {d.get('id')} -> {d.get('url')}\")
+          "
